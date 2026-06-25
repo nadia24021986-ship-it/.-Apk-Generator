@@ -1,0 +1,137 @@
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web to APK Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="bg-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-700">
+        <div class="text-center mb-6">
+            <h2 class="text-3xl font-extrabold text-white tracking-tight">Web to APK</h2>
+            <p class="text-slate-400 text-sm mt-1">Ubah website kamu menjadi aplikasi Android dalam sekejap</p>
+        </div>
+        
+        <form id="apkForm" class="space-y-5">
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">URL Website</label>
+                <input type="url" id="url" required placeholder="https://tokokamu.com" 
+                       class="mt-1 block w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white outline-none transition duration-200">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Nama Aplikasi</label>
+                <input type="text" id="appName" required placeholder="Toko Kamu" 
+                       class="mt-1 block w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white outline-none transition duration-200">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Email Penerima</label>
+                <input type="email" id="email" required placeholder="nadinevindro@gmail.com" 
+                       class="mt-1 block w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white outline-none transition duration-200">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Logo Aplikasi (.png atau .jpg)</label>
+                <div class="relative mt-1 flex items-center justify-center w-full">
+                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-700 border-dashed rounded-xl cursor-pointer hover:bg-slate-750 transition duration-200">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <p class="text-xs text-slate-400"><span class="font-semibold text-blue-400">Klik untuk upload</span> logo kamu</p>
+                        </div>
+                        <input type="file" id="logo" accept="image/png, image/jpeg" required class="hidden" />
+                    </label>
+                </div>
+                <div id="file-name" class="text-xs text-blue-400 mt-2 text-center font-medium hidden"></div>
+            </div>
+
+            <button type="submit" id="submitBtn" 
+                    class="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-lg shadow-blue-500/20">
+                Generate & Kirim APK
+            </button>
+            <p id="status" class="text-sm text-center font-medium mt-3 hidden"></p>
+        </form>
+    </div>
+
+    <script>
+        const logoInput = document.getElementById('logo');
+        const fileNameDiv = document.getElementById('file-name');
+
+        logoInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                fileNameDiv.innerText = `Logo terpilih: ${e.target.files[0].name}`;
+                fileNameDiv.classList.remove('hidden');
+            } else {
+                fileNameDiv.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('apkForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submitBtn');
+            const status = document.getElementById('status');
+            const logoFile = logoInput.files[0];
+            
+            btn.disabled = true;
+            btn.classList.add('bg-slate-600', 'cursor-not-allowed');
+            btn.classList.remove('bg-blue-600', 'hover:bg-blue-500');
+            status.classList.remove('hidden', 'text-red-400', 'text-green-400');
+            status.classList.add('text-blue-400');
+            status.innerText = "⏳ Sedang memproses data & ikon... Mohon tunggu.";
+
+            try {
+                const base64Logo = await getBase64(logoFile);
+
+                const payload = {
+                    url: document.getElementById('url').value,
+                    name: document.getElementById('appName').value,
+                    email: document.getElementById('email').value,
+                    logoBase64: base64Logo.split(',')[1]
+                };
+
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    status.classList.replace('text-blue-400', 'text-green-400');
+                    status.innerText = "🚀 Sukses! Pabrik perakit sedang merakit APK-mu. Cek email dalam 2-3 menit!";
+                } else {
+                    const errRes = await response.json();
+                    throw new Error(errRes.message || "Gagal menghubungi server pembuat.");
+                }
+            } catch (error) {
+                status.classList.replace('text-blue-400', 'text-red-400');
+                status.innerText = "❌ Error: " + error.message;
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('bg-slate-600', 'cursor-not-allowed');
+                btn.classList.add('bg-blue-600', 'hover:bg-blue-500');
+            }
+        });
+
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+    </script>
+</body>
+</html>
+
+```
