@@ -1,0 +1,16 @@
+```json
+{
+  "name": "web-to-apk-generator",
+  "version": "1.0.0",
+  "description": "Aplikasi pengubah website menjadi APK menggunakan Vercel dan GitHub Actions",
+  "main": "api/generate.js",
+  "scripts": {
+    "start": "echo 'Run on Vercel' && exit 0"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": "18.x"
+  }
+}
+
+```
